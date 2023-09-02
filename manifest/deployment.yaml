@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-flask
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: web-flask
+  template:
+    metadata:
+      labels:
+        app: web-flask
+    spec:
+      containers:
+        - name: web-flask
+          image: web_flask:latest
+          env:
+            - name: UUID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+          livenessProbe:
+            httpGet:
+              path: /id
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /id
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
+          ports:
+            - containerPort: 8000
+          imagePullPolicy: Never
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-flask-service
+spec:
+  type: ClusterIP
+  selector:
+    app: web-flask
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8000
